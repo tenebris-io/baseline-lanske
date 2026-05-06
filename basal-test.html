@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basal Testing — Fiercely Diabetic</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --deep-purple: #342858;
+      --hot-pink: #8E3165;
+      --warm-orange: #DB6554;
+      --cream: #F9F5F0;
+      --cream2: #EDE8E1;
+      --text: #342858;
+      --muted: #6b5f80;
+      --white: #ffffff;
+      --border: #D4CEC5;
+      --green: #2d7a4f;
+      --green-bg: #eaf4ee;
+      --yellow: #7a5a00;
+      --yellow-bg: #fdf8e1;
+      --red: #8E3165;
+      --red-bg: #fdedf4;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(52,40,88,0.08);
+      --medium-gray: #888780;
+      /* short-form aliases — used throughout this file */
+      --purple: #342858;
+      --pink: #8E3165;
+      --orange: #DB6554;
+    }
+
+    @media print {
+      @page { margin: 0.6in; size: letter; }
+      body { font-size: 11px; }
+      .site-nav, .screen-footer, .btn, .disclaimer-box, .progress-dots,
+      .yellow-notice, #result-icon, #result-title { display: none !important; }
+      .app { max-width: 100%; }
+      .screen { display: none !important; }
+      #screen-5 { display: flex !important; }
+      #print-header, #print-footer { display: block !important; }
+      .screen-body { padding: 0; }
+      .result-card, .chart-wrap, .reading-list-wrap { margin-bottom: 8px; padding: 8px 10px; }
+      canvas { max-height: 100px !important; }
+      h1, h2 { font-size: 1rem; }
+
+      /* When printing from history modal */
+      body.printing-modal .app { display: none !important; }
+      body.printing-modal .modal-overlay { display: block !important; position: static !important; background: none !important; }
+      body.printing-modal .modal-sheet { box-shadow: none !important; border-radius: 0 !important; max-height: none !important; overflow: visible !important; }
+      body.printing-modal .modal-handle,
+      body.printing-modal .modal-close,
+      body.printing-modal .btn { display: none !important; }
+      body.printing-modal #print-header { display: block !important; }
+    } #print-footer { display: block !important; }
+      .screen-body { padding: 0; }
+      .result-card, .chart-wrap, .reading-list-wrap { margin-bottom: 8px; padding: 8px 10px; }
+      canvas { max-height: 100px !important; }
+      h1, h2 { font-size: 1rem; }
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .app {
+      max-width: 680px;
+      margin: 0 auto;
+      min-height: calc(100vh - 60px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--deep-purple);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 80px;
+      height: 60px;
+    }
+    .site-nav .nav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+    }
+    .site-nav .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .site-nav .nav-links a {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .site-nav .nav-links a:hover { color: var(--orange); }
+    @media (max-width: 600px) {
+      .site-nav { padding: 0 24px; }
+      .site-nav .nav-links { gap: 20px; }
+    }
+
+    /* SCREENS */
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+    .screen-body { flex: 1; padding: 28px 24px; overflow-y: auto; }
+    .screen-footer { padding: 16px 24px 28px; border-top: 1px solid var(--border); background: var(--white); }
+
+    /* TYPOGRAPHY */
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--purple);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--pink);
+      color: var(--white);
+    }
+    .btn-primary:hover:not(:disabled) { background: #7a2956; }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--pink);
+      border: 1.5px solid var(--pink);
+    }
+    .btn-secondary:hover { background: rgba(142,49,101,0.06); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.9rem;
+    }
+    .btn-ghost:hover { color: var(--purple); }
+    .btn + .btn { margin-top: 10px; }
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      width: auto;
+      border-radius: 8px;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+    .card-selectable {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      padding: 18px 20px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card-selectable:hover { border-color: var(--pink); box-shadow: var(--shadow); }
+    .card-selectable.selected { border-color: var(--pink); background: rgba(142,49,101,0.04); }
+    .card-selectable .card-title {
+      font-weight: 600;
+      color: var(--purple);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-selectable .card-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .card-selectable .card-time {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--orange);
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    /* CHECKLIST */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item input[type="checkbox"] { display: none; }
+    .checklist-item { user-select: none; }
+    .check-box {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      margin-top: 1px;
+    }
+    .checklist-item.checked .check-box {
+      background: var(--pink);
+      border-color: var(--pink);
+    }
+    .checklist-item.checked .check-box::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border: 2px solid white;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translateY(-1px);
+      display: block;
+    }
+    .check-label {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .checklist-item.checked .check-label { color: var(--muted); }
+
+    /* GLUCOSE INPUT */
+    .glucose-input-wrap {
+      background: var(--cream2);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .glucose-input-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .glucose-value-display {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--purple);
+      line-height: 1;
+    }
+    .glucose-unit { font-size: 0.9rem; color: var(--muted); margin-top: 4px; }
+    .glucose-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.1rem;
+      color: var(--text);
+      background: var(--white);
+      text-align: center;
+      margin-top: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .glucose-input:focus { border-color: var(--pink); }
+
+    /* STATUS BADGE */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .status-valid { background: var(--green-bg); color: var(--green); }
+    .status-warning { background: var(--yellow-bg); color: var(--yellow); }
+    .status-invalid { background: var(--red-bg); color: var(--red); }
+
+    /* CHART */
+    .chart-wrap {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .chart-title { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    canvas { width: 100% !important; height: auto !important; max-height: 140px; }
+
+    /* IN PROGRESS STATS */
+    .stat-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      flex: 1;
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .stat-value { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--purple); }
+    .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    /* RESULT */
+    .result-icon { font-size: 3rem; text-align: center; margin-bottom: 12px; }
+    .result-card {
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .result-good { background: var(--green-bg); border: 1.5px solid #a8d5bc; }
+    .result-low { background: var(--yellow-bg); border: 1.5px solid #f0d87a; }
+    .result-high { background: var(--red-bg); border: 1.5px solid #e8a8c4; }
+    .result-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+    .result-desc { font-size: 0.9rem; line-height: 1.6; }
+    .disclaimer-box {
+      background: var(--cream2);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 0.82rem;
+      color: var(--medium-gray);
+      line-height: 1.55;
+      margin-bottom: 16px;
+      border-left: 3px solid var(--orange);
+    }
+
+    /* HISTORY */
+    .history-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+    }
+    .history-item:hover { box-shadow: 0 4px 18px rgba(52,40,88,0.13); }
+    .history-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .history-info { flex: 1; }
+    .history-window { font-weight: 600; font-size: 0.95rem; color: var(--purple); }
+    .history-date { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .history-result { font-size: 0.82rem; font-weight: 500; }
+    .dot-green { background: var(--green); }
+    .dot-yellow { background: #d4a017; }
+    .dot-red { background: var(--pink); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; line-height: 1.5; }
+
+    /* INVALIDATED */
+    .invalidate-reason {
+      background: var(--red-bg);
+      border-radius: var(--radius);
+      border: 1.5px solid #e8a8c4;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .invalidate-reason h3 { font-family: 'Playfair Display', serif; font-size: 1.05rem; margin-bottom: 8px; color: var(--pink); }
+    .invalidate-reason p { font-size: 0.88rem; line-height: 1.55; color: var(--text); }
+
+    /* LOG ENTRY */
+    .log-entry-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .log-entry-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .log-entry-row input:focus { border-color: var(--pink); }
+    .log-entry-row button {
+      padding: 10px 16px;
+      background: var(--pink);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* READING LIST */
+    .reading-list { margin-bottom: 16px; }
+    .reading-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .reading-row:last-child { border-bottom: none; }
+    .reading-time { color: var(--muted); }
+    .reading-val { font-weight: 600; color: var(--purple); }
+
+    /* HISTORY DETAIL MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(52,40,88,0.5);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      background: var(--cream);
+      border-radius: 20px 20px 0 0;
+      max-width: 480px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 28px 24px 40px;
+    }
+    .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-close { float: right; background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; margin-top: -4px; }
+
+    /* INLINE WARNING BANNER */
+    .inline-warning {
+      background: var(--yellow-bg);
+      border: 1.5px solid #f0d87a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      color: var(--yellow);
+      margin-bottom: 14px;
+      display: none;
+    }
+    .inline-warning.visible { display: block; }
+
+    /* PROGRESS DOTS */
+    .progress-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .progress-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+    .progress-dot.done { background: var(--pink); }
+    .progress-dot.active { background: var(--orange); width: 18px; border-radius: 4px; }
+
+    /* HIDE NUMBER INPUT SPINNERS */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    /* INFO TAG */
+    .info-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--cream2);
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-left: 6px;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .info-tag:hover { background: var(--pink); border-color: var(--pink); color: white; }
+    .check-label-wrap {
+      display: flex;
+      align-items: flex-start;
+      flex: 1;
+    }
+    .check-label-text { flex: 1; }
+    .info-expand {
+      display: none;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 6px;
+      padding: 8px 10px;
+      background: var(--cream2);
+      border-radius: 8px;
+      border-left: 3px solid var(--pink);
+    }
+    .info-expand.open { display: block; }
+
+    /* ANIMATED TIMER PULSE */
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .pulse-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.8s ease-in-out infinite;
+      margin-right: 6px;
+    }
+
+    /* PREP SCREEN */
+    .prep-input-wrap {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+    .prep-input-wrap:focus-within { border-color: var(--pink); }
+    .prep-input-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .prep-input-wrap input, .prep-input-wrap select {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      color: var(--text);
+      outline: none;
+    }
+    .prep-result-card {
+      background: var(--purple);
+      color: var(--cream);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .prep-result-card h2 { color: var(--cream); font-size: 1rem; margin-bottom: 14px; letter-spacing: 0.02em; }
+    .prep-result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(249,245,240,0.15);
+      font-size: 0.88rem;
+    }
+    .prep-result-row:last-child { border-bottom: none; }
+    .prep-result-label { color: rgba(249,245,240,0.65); }
+    .prep-result-value { font-weight: 600; color: var(--cream); }
+
+    /* UNIT TOGGLE */
+    .unit-toggle {
+      display: flex;
+      background: var(--cream2);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .unit-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .unit-btn.active { background: var(--white); color: var(--purple); box-shadow: 0 1px 6px rgba(52,40,88,0.12); }
+
+    /* SOFT STOP MODAL */
+    .softstop-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(52,40,88,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .softstop-modal.open { display: flex; }
+    .softstop-sheet {
+      background: var(--cream);
+      border-radius: 20px;
+      max-width: 420px;
+      width: 100%;
+      padding: 28px 24px;
+    }
+    .softstop-icon { font-size: 2.2rem; text-align: center; margin-bottom: 12px; }
+    .softstop-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--purple); text-align: center; margin-bottom: 8px; }
+    .softstop-body { font-size: 0.9rem; color: var(--text); line-height: 1.6; text-align: center; margin-bottom: 20px; }
+    /* TEST LENGTH SLIDER */
+    .slider-wrap { margin-bottom: 20px; }
+    .slider-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--purple);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .slider-sublabel {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--pink);
+      cursor: pointer;
+      box-shadow: 0 1px 6px rgba(142,49,101,0.3);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--pink);
+      cursor: pointer;
+      border: none;
+    }
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+      padding: 0 2px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="/" class="nav-brand">fiercely diabetic</a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog.html">Blog</a></li>
+    <li><a href="/tools.html" class="active">Tools</a></li>
+    <li><a href="/log.html">Training Log</a></li>
+    <li><a href="/deep-cuts.html">Deep Cuts</a></li>
+    <li><a href="/all-the-hits.html" style="color: var(--deep-purple);">All the Hits</a></li>
+  </ul>
+</nav>
+
+<div class="app">
+
+  <!-- ===================== SCREEN 0: PREP ===================== -->
+  <div class="screen active" id="screen-0">
+    <div class="screen-body">
+      <h1>Plan Your Basal Test</h1>
+      <p class="subtitle">Tell us when you want to start and we'll work out the timing for you.</p>
+
+      <div class="prep-input-wrap">
+        <div class="prep-input-label">Test Date</div>
+        <input type="date" id="prep-date">
+      </div>
+
+      <div class="prep-input-wrap">
+        <div class="prep-input-label">Planned Start Time</div>
+        <input type="time" id="prep-time">
+      </div>
+
+      <div class="prep-input-wrap">
+        <div class="prep-input-label">Test Length</div>
+        <div class="slider-wrap" style="padding-top:8px;">
+          <div class="slider-value"><span id="prep-length-val">7</span> hours</div>
+          <div class="slider-sublabel">(length of time you can fast, skip eating, and avoid exercise)</div>
+          <input type="range" id="prep-length" min="6" max="8" step="0.5" value="7" oninput="onLengthSlide()">
+          <div class="slider-ticks">
+            <span>6 hrs</span><span>6.5</span><span>7</span><span>7.5</span><span>8 hrs</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Display Units</div>
+      <div class="unit-toggle" style="margin-bottom:20px;">
+        <button class="unit-btn active" id="unit-mgdl" onclick="setUnit('mgdl')">mg/dL</button>
+        <button class="unit-btn" id="unit-mmol" onclick="setUnit('mmol')">mmol/L</button>
+      </div>
+
+      <div id="prep-result" style="display:none;">
+        <div class="prep-result-card">
+          <h2>Your Test Timing</h2>
+          <div class="prep-result-row">
+            <span class="prep-result-label">Test window</span>
+            <span class="prep-result-value" id="prep-res-window">—</span>
+          </div>
+          <div class="prep-result-row">
+            <span class="prep-result-label">Finish eating by</span>
+            <span class="prep-result-value" id="prep-res-meal">—</span>
+          </div>
+          <div class="prep-result-row">
+            <span class="prep-result-label">High-fat meal — finish by</span>
+            <span class="prep-result-value" id="prep-res-fatmeal">—</span>
+          </div>
+          <div class="prep-result-row">
+            <span class="prep-result-label">Finish exercise by</span>
+            <span class="prep-result-value" id="prep-res-exercise">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="btn-prep-next" disabled onclick="goToChecklist()">Continue to Checklist →</button>
+      <button class="btn btn-ghost" onclick="goTo('screen-history')">View past tests</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN 1: SELECT WINDOW ===================== -->
+  <div class="screen" id="screen-1">
+    <div class="screen-body">
+      <div class="progress-dots">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+      <h1>Choose a Test Window</h1>
+      <p class="subtitle">A basal test isolates your background insulin by removing all other variables. Pick the part of the day you want to evaluate.</p>
+
+      <div class="section-label">Test Windows</div>
+
+      <div class="card-selectable" id="win-overnight" onclick="selectWindow('overnight')">
+        <div class="card-time">Midnight — 6:00 AM</div>
+        <div class="card-title"><span>🌙</span> Overnight</div>
+        <div class="card-desc">Tests how your basal handles the overnight fast and the early morning rise in cortisol (sometimes called the dawn phenomenon).</div>
+      </div>
+
+      <div class="card-selectable" id="win-morning" onclick="selectWindow('morning')">
+        <div class="card-time">6:00 AM — Noon</div>
+        <div class="card-title"><span>🌅</span> Morning</div>
+        <div class="card-desc">Covers the post-dawn window. Useful if your glucose tends to drift in the hours before lunch even without food.</div>
+      </div>
+
+      <div class="card-selectable" id="win-afternoon" onclick="selectWindow('afternoon')">
+        <div class="card-time">Noon — 6:00 PM</div>
+        <div class="card-title"><span>☀️</span> Afternoon</div>
+        <div class="card-desc">Tests your midday and early evening basal. Good starting point if your glucose is inconsistent in the afternoon without a clear food cause.</div>
+      </div>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="btn-window-next" disabled onclick="goToChecklist()">Continue →</button>
+      <button class="btn btn-ghost" onclick="goTo('screen-0')">← Back</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN 2: CHECKLIST ===================== -->
+  <div class="screen" id="screen-2">
+    <div class="screen-body">
+      <div class="progress-dots">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+      </div>
+      <h1>Pre-Test Checklist</h1>
+      <p class="subtitle">All conditions need to be met for a valid basal test. Check each one that applies to you right now.</p>
+
+      <div class="card">
+        <div id="checklist">
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text" id="meal-time-label">Last meal was at least 4 hours ago <em>(5 hours for a high-fat meal)</em></span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-1')">i</span>
+                <div class="info-expand" id="info-1">Food raises glucose directly, independent of your basal rate. If food is still active in your system, any movement in glucose could be from digestion — not from whether your basal is set correctly.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text">No active bolus insulin on board</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-2')">i</span>
+                <div class="info-expand" id="info-2">Bolus insulin continues working for 3–5 hours after injection. If it's still active, it will drive glucose down independently of your basal — making it impossible to tell which one is responsible for any change.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text" id="checklist-glucose-range">Glucose is currently between 80–180 mg/dL</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-3')">i</span>
+                <div class="info-expand" id="info-3">Starting too low risks a hypoglycemic episode during the test, which would force you to treat and end it. Starting too high means you're already outside the valid range and any correction would invalidate the result.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text">Glucose trend is stable — no rapid rise or fall in the last 30 minutes</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-4')">i</span>
+                <div class="info-expand" id="info-4">A glucose that's already moving at the start means something is already affecting it. That movement will be baked into your test data, making it hard to separate from what your basal is actually doing.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text" id="exercise-time-label">No exercise in the last 4+ hours</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-5')">i</span>
+                <div class="info-expand" id="info-5">Exercise increases insulin sensitivity for hours afterward, which means your basal may appear to be doing more work than it actually does on a non-exercise day. The test would reflect a misleading picture of your typical pattern.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text">Not sick, not under unusual stress</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-6')">i</span>
+                <div class="info-expand" id="info-6">Illness and stress both trigger cortisol and other hormones that raise glucose independently of what your basal rate is doing. A test run while sick or stressed will not reflect your normal day-to-day basal needs.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text" id="no-eat-label">No plans to eat from the test window</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-7')">i</span>
+                <div class="info-expand" id="info-7">Eating during the test immediately invalidates it. Food introduces a glucose variable that has nothing to do with basal. The test only works if your glucose is moving — or not — purely in response to your background insulin.</div>
+              </div>
+            </div>
+          </div>
+          <div class="checklist-item" onclick="toggleCheck(this)">
+            <div class="check-box"></div>
+            <div class="check-label-wrap">
+              <div>
+                <span class="check-label-text" id="no-exercise-label">No plans to exercise from the test window</span>
+                <span class="info-tag" onclick="toggleInfo(event, 'info-8')">i</span>
+                <div class="info-expand" id="info-8">Exercise changes how your body uses glucose and responds to insulin — often dramatically. Any glucose movement during the test would reflect the exercise effect, not your basal rate.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:0.82rem;color:var(--muted);line-height:1.5;">Not sure about one of these? It's better to wait for a cleaner window than to run a test you can't trust.</p>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="btn-start" disabled onclick="startTest()">Start Test</button>
+      <button class="btn btn-ghost" onclick="goTo('screen-1')">← Back</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN 3: IN PROGRESS ===================== -->
+  <div class="screen" id="screen-3">
+    <div class="screen-body">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h1 style="margin-bottom:0;">Test In Progress</h1>
+        <span class="status-badge status-valid" id="status-badge"><span class="pulse-dot"></span>Valid</span>
+      </div>
+      <p class="subtitle" id="test-window-label">Overnight — Midnight to 6:00 AM</p>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-value" id="stat-elapsed">0:00</div>
+          <div class="stat-label">Elapsed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-start-time">—</div>
+          <div class="stat-label">Started</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-readings">0</div>
+          <div class="stat-label">Readings</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <div style="flex:2;display:flex;flex-direction:column;gap:0;">
+          <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:6px;">Greatest Change from Starting Glucose</div>
+          <div style="display:flex;gap:10px;">
+            <div class="stat-box" style="flex:1;margin-bottom:0;">
+              <div class="stat-value" style="color:var(--orange);" id="stat-up">—</div>
+              <div class="stat-label" id="label-stat-up">mg/dL up</div>
+            </div>
+            <div class="stat-box" style="flex:1;margin-bottom:0;">
+              <div class="stat-value" style="color:var(--pink);" id="stat-down">—</div>
+              <div class="stat-label" id="label-stat-down">mg/dL down</div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-box" style="flex:1;">
+          <div class="stat-value" id="stat-next">—</div>
+          <div class="stat-label">Countdown to Next Reading</div>
+        </div>
+      </div>
+
+      <div class="inline-warning" id="inline-warning">
+        ⚠️ Glucose is approaching the boundary. The test may become invalid.
+      </div>
+
+      <div class="glucose-input-wrap">
+        <div class="glucose-input-label">Log a Reading</div>
+        <div class="glucose-value-display" id="current-glucose-display">—</div>
+        <div class="glucose-unit" id="glucose-unit-label">mg/dL</div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <input type="datetime-local" id="reading-time-entry" style="flex:1.4;padding:10px 12px;border-radius:10px;border:2px solid var(--border);font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--pink)'" onblur="this.style.borderColor='var(--border)'">
+          <input type="number" id="glucose-entry" placeholder="mg/dL" min="40" max="400" style="flex:1;padding:10px 12px;border-radius:10px;border:2px solid var(--border);font-family:'DM Sans',sans-serif;font-size:0.95rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.15s;text-align:center;" onfocus="this.style.borderColor='var(--pink)'" onblur="this.style.borderColor='var(--border)'">
+          <button onclick="logReading()" style="padding:10px 16px;background:var(--pink);color:white;border:none;border-radius:10px;font-weight:600;font-size:0.85rem;cursor:pointer;white-space:nowrap;">Log</button>
+        </div>
+        <div id="timing-warning" style="display:none;margin-top:8px;font-size:0.8rem;color:var(--yellow);background:var(--yellow-bg);border-radius:8px;padding:8px 10px;border:1px solid #f0d87a;"></div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Glucose Trace</div>
+        <canvas id="glucose-chart" height="140"></canvas>
+      </div>
+
+      <div class="reading-list" id="reading-list"></div>
+
+      <div id="reminder-box" style="background:var(--cream2);border-radius:var(--radius);padding:14px 16px;font-size:0.85rem;color:var(--muted);line-height:1.55;">
+        <strong style="color:var(--purple);">Reminder:</strong> Do not eat, exercise, or correct during the test. If your glucose drops below 70 mg/dL, treat the low and end the test.
+      </div>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="btn-end-test" onclick="endTest()">End Test &amp; See Results</button>
+      <button class="btn btn-ghost" onclick="confirmEndEarly()">End test early</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN 4: INVALIDATED ===================== -->
+  <div class="screen" id="screen-4">
+    <div class="screen-body">
+      <h1>Test Invalidated</h1>
+      <p class="subtitle">Something happened during this test window that makes the result unreliable.</p>
+
+      <div class="invalidate-reason" id="invalidate-reason">
+        <h3>Why this matters</h3>
+        <p id="invalidate-text">The test could not be completed as needed.</p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:10px;">Why do tests get invalidated?</h2>
+        <p style="font-size:0.88rem;line-height:1.6;color:var(--text);">
+          A basal test works by isolating your background insulin from everything else. When glucose moves because of food, exercise, a correction, or an illness, there's no way to know whether the change was caused by your basal rate or by the other variable. The result wouldn't reflect your actual basal — it would just be noise.
+        </p>
+      </div>
+
+      <p style="font-size:0.85rem;color:var(--muted);line-height:1.5;margin-bottom:16px;">You can save the partial data for your own reference, or discard it and start fresh when conditions are better.</p>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-secondary" onclick="savePartialAndHistory()">Save partial data</button>
+      <button class="btn btn-ghost" onclick="discardAndRestart()">Discard &amp; start over</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN 5: RESULTS ===================== -->
+  <div class="screen" id="screen-5">
+    <div class="screen-body">
+
+      <div id="print-header" style="display:none;">
+        <div style="text-align:center;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid #342858;">
+          <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:#342858;letter-spacing:0.04em;">fiercely diabetic</div>
+          <div style="font-size:0.75rem;color:#6b5f80;">fiercelydiabetic.com</div>
+          <div style="font-size:0.95rem;font-weight:600;color:#342858;margin-top:8px;">Basal Rate Test Results</div>
+          <div id="print-test-date" style="font-size:0.8rem;color:#6b5f80;margin-top:2px;"></div>
+        </div>
+        <div style="font-size:0.72rem;color:#888780;background:#F9F5F0;border:1px solid #D4CEC5;border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.5;">
+          <strong style="color:#342858;">Medical Disclaimer:</strong> This report is provided for informational purposes only. It is not medical advice and should not be used to make decisions about insulin dosing or any other aspect of your medical care without consulting a licensed physician, endocrinologist, or certified diabetes educator.
+        </div>
+      </div>
+      <div class="progress-dots">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+      </div>
+
+      <div class="result-card" id="result-card">
+        <div class="result-title" id="result-subtitle"></div>
+        <div class="result-desc" id="result-body"></div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Your Glucose Trace — <span id="result-window-label">Overnight</span></div>
+        <canvas id="result-chart" height="140"></canvas>
+      </div>
+
+      <div style="background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Readings logged</span>
+          <span id="res-readings" style="font-weight:600;color:var(--purple);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Starting glucose</span>
+          <span id="res-start" style="font-weight:600;color:var(--purple);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Ending glucose</span>
+          <span id="res-end" style="font-weight:600;color:var(--purple);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;">
+          <span style="color:var(--muted);">Net change</span>
+          <span id="res-change" style="font-weight:600;color:var(--purple);">—</span>
+        </div>
+      </div>
+
+      <div class="section-label">All Readings</div>
+      <div id="res-reading-list" style="background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:4px 16px;margin-bottom:16px;"></div>
+
+      <div class="disclaimer-box">
+        This result reflects your glucose data from this test only. It is not medical advice. Always review basal adjustments with your endocrinologist or certified diabetes educator.
+      </div>
+
+      <div style="background:var(--yellow-bg);border:1px solid #f0d87a;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:0.82rem;color:var(--yellow);line-height:1.55;">
+        <strong>About saving:</strong> This test is not saved automatically. Press "Save to History" to store it on this device. History is saved in your browser only — it will not sync to other devices and will be lost if you clear your browser data. Print or save a copy for a permanent record.
+      </div>
+
+      <div id="print-footer" style="display:none;font-size:0.68rem;color:#6b5f80;text-align:center;border-top:1px solid #D4CEC5;padding-top:8px;margin-top:8px;">
+        © 2026 Fiercely Diabetic. All rights reserved. This tool and its content are proprietary. Unauthorized reproduction or distribution is prohibited.
+      </div>
+
+      <button class="btn btn-secondary" onclick="const d = state.prepDate || new Date(); document.getElementById('print-test-date').textContent = 'Test Date: ' + d.toLocaleDateString([], {weekday:'long',year:'numeric',month:'long',day:'numeric'}); window.print();" style="width:100%;margin-bottom:8px;">🖨 Print This Test</button>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="btn-save-history" onclick="saveToHistory()">Save to History</button>
+      <button class="btn btn-secondary" onclick="runAnother()">Run Another Test</button>
+      <button class="btn btn-ghost" id="btn-view-history" style="display:none;" onclick="goTo('screen-history')">View History</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: HISTORY ===================== -->
+  <div class="screen" id="screen-history">
+    <div class="screen-body">
+      <h1>Test History</h1>
+      <p class="subtitle">Your past basal tests, most recent first. Tap any entry to see the full detail.</p>
+      <div id="history-list"></div>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" onclick="goTo('screen-0')">Run a New Test</button>
+    </div>
+  </div>
+
+</div><!-- end .app -->
+
+<!-- SOFT STOP MODAL -->
+<div class="softstop-modal" id="softstop-modal">
+  <div class="softstop-sheet">
+    <div class="softstop-icon" id="softstop-icon">⚠️</div>
+    <div class="softstop-title" id="softstop-title">Glucose Out of Range</div>
+    <div class="softstop-body" id="softstop-body"></div>
+    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="softstopSave()">Save data &amp; end test</button>
+    <button class="btn btn-ghost" onclick="softstopContinue()">Continue test anyway</button>
+  </div>
+</div>
+
+<!-- MODAL: History Detail -->
+<div class="modal-overlay" id="history-modal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="document.getElementById('history-modal').classList.remove('open')">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+// =========================================================
+// STATE
+// =========================================================
+let state = {
+  selectedWindow: null,
+  startTime: null,
+  readings: [],
+  timerInterval: null,
+  history: JSON.parse(localStorage.getItem('basal-history') || '[]'),
+  invalidated: false,
+  invalidReason: '',
+  lastReadingTime: null,
+  nextReadingTarget: null,     // wall-clock time 2hrs after last log press
+  firstReadingTime: null,      // entered time of first reading, for elapsed
+  unit: 'mgdl',
+  prepDate: null,
+  prepEndTime: null,
+  prepLength: 7,
+  prepTime: null
+};
+
+const WINDOWS = {
+  overnight: { label: 'Overnight', time: 'Midnight — 6:00 AM', emoji: '🌙' },
+  morning:   { label: 'Morning',   time: '6:00 AM — Noon',     emoji: '🌅' },
+  afternoon: { label: 'Afternoon', time: 'Noon — 6:00 PM',     emoji: '☀️' },
+  custom:    { label: 'Custom',    time: '',                    emoji: '🕐' }
+};
+
+// =========================================================
+// UNIT HELPERS
+// =========================================================
+function fmtGlucose(mgdl) {
+  if (state.unit === 'mmol') return (mgdl / 18.0).toFixed(1);
+  return mgdl;
+}
+function unitLabel() {
+  return state.unit === 'mmol' ? 'mmol/L' : 'mg/dL';
+}
+function setUnit(u) {
+  state.unit = u;
+  document.getElementById('unit-mgdl').classList.toggle('active', u === 'mgdl');
+  document.getElementById('unit-mmol').classList.toggle('active', u === 'mmol');
+  updateUnitLabels();
+}
+
+function updateUnitLabels() {
+  const ul = unitLabel();
+  const low70  = fmtGlucose(70);
+  const low80  = fmtGlucose(80);
+  const high180 = fmtGlucose(180);
+  const range30 = fmtGlucose(30);
+
+  // Checklist item 3
+  const rangeEl = document.getElementById('checklist-glucose-range');
+  if (rangeEl) rangeEl.textContent = `Glucose is currently between ${low80}–${high180} ${ul}`;
+
+  // Stat box labels
+  const upLbl = document.getElementById('label-stat-up');
+  const downLbl = document.getElementById('label-stat-down');
+  if (upLbl) upLbl.textContent = ul + ' up';
+  if (downLbl) downLbl.textContent = ul + ' down';
+
+  // Glucose entry placeholder
+  const entry = document.getElementById('glucose-entry');
+  if (entry) entry.placeholder = ul;
+
+  // Glucose unit display label
+  const unitLbl = document.getElementById('glucose-unit-label');
+  if (unitLbl) unitLbl.textContent = ul;
+
+  // Reminder box
+  const reminder = document.getElementById('reminder-box');
+  if (reminder) reminder.innerHTML = `<strong style="color:var(--purple);">Reminder:</strong> Do not eat, exercise, or correct during the test. If your glucose drops below ${low70} ${ul}, treat the low and end the test.`;
+
+  // Soft stop button labels updated dynamically in showSoftstop, no change needed here
+}
+
+// =========================================================
+// PREP SCREEN
+// =========================================================
+function initPrep() {
+  // Default date to today
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  document.getElementById('prep-date').value = yyyy + '-' + mm + '-' + dd;
+
+  // Default time to next hour
+  const nextHour = new Date(today.getTime() + (60 - today.getMinutes()) * 60000);
+  const hh = String(nextHour.getHours()).padStart(2,'0');
+  const min = String(nextHour.getMinutes()).padStart(2,'0');
+  document.getElementById('prep-time').value = hh + ':' + min;
+
+  document.getElementById('prep-date').addEventListener('change', calcPrep);
+  document.getElementById('prep-time').addEventListener('change', calcPrep);
+  calcPrep();
+}
+
+function onLengthSlide() {
+  const val = parseFloat(document.getElementById('prep-length').value);
+  document.getElementById('prep-length-val').textContent = val % 1 === 0 ? val : val.toFixed(1);
+  calcPrep();
+}
+
+function calcPrep() {
+  const dateVal = document.getElementById('prep-date').value;
+  const timeVal = document.getElementById('prep-time').value;
+  const lengthVal = parseFloat(document.getElementById('prep-length').value);
+
+  const ready = dateVal && timeVal;
+  document.getElementById('btn-prep-next').disabled = !ready;
+
+  if (!ready) { document.getElementById('prep-result').style.display = 'none'; return; }
+
+  const [yyyy, mm, dd] = dateVal.split('-').map(Number);
+  const [hh, min] = timeVal.split(':').map(Number);
+  const startDt = new Date(yyyy, mm-1, dd, hh, min, 0, 0);
+  const endDt = new Date(startDt.getTime() + lengthVal * 3600000);
+
+  const meal4 = new Date(startDt.getTime() - 4 * 3600000);
+  const meal5 = new Date(startDt.getTime() - 5 * 3600000);
+  const exCut = new Date(startDt.getTime() - 4 * 3600000);
+
+  function fmtDt(d) {
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const day = d.getDate() !== startDt.getDate() ? dayNames[d.getDay()] + ' ' : '';
+    return day + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  document.getElementById('prep-res-window').textContent = fmtDt(startDt) + ' — ' + fmtDt(endDt);
+  document.getElementById('prep-res-meal').textContent = fmtDt(meal4);
+  document.getElementById('prep-res-fatmeal').textContent = fmtDt(meal5);
+  document.getElementById('prep-res-exercise').textContent = fmtDt(exCut);
+  document.getElementById('prep-result').style.display = 'block';
+
+  // Store for use throughout app
+  state.prepDate = startDt;
+  state.prepEndTime = endDt;
+  state.prepLength = lengthVal;
+  state.selectedWindow = 'custom';
+}
+
+// =========================================================
+// NAVIGATION
+// =========================================================
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-history') renderHistory();
+  window.scrollTo(0,0);
+}
+
+// =========================================================
+// SCREEN 1 — SELECT WINDOW
+// =========================================================
+function selectWindow(w) {
+  state.selectedWindow = w;
+  document.querySelectorAll('.card-selectable').forEach(c => c.classList.remove('selected'));
+  document.getElementById('win-' + w).classList.add('selected');
+  document.getElementById('btn-window-next').disabled = false;
+}
+
+// =========================================================
+// SCREEN 2 — CHECKLIST
+// =========================================================
+function goToChecklist() {
+  const now = state.prepDate || new Date();
+  function fmtTime(d) { return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+
+  // Meal cutoffs
+  const cut4 = new Date(now.getTime() - 4 * 3600000);
+  const cut5 = new Date(now.getTime() - 5 * 3600000);
+  document.getElementById('meal-time-label').innerHTML =
+    `Last meal was before <strong>${fmtTime(cut4)}</strong> <em>(high-fat meal: before ${fmtTime(cut5)})</em>`;
+
+  // Exercise cutoff
+  const exCut = new Date(now.getTime() - 4 * 3600000);
+  document.getElementById('exercise-time-label').innerHTML =
+    `Exercise finished before <strong>${fmtTime(exCut)}</strong> <em>(4+ hours before test)</em>`;
+
+  // Window time in no-eat / no-exercise items
+  let winStr = 'the test window';
+  if (state.prepDate && state.prepEndTime) {
+    winStr = fmtTime(state.prepDate) + ' — ' + fmtTime(state.prepEndTime);
+  }
+  document.getElementById('no-eat-label').textContent = `No plans to eat from ${winStr}`;
+  document.getElementById('no-exercise-label').textContent = `No plans to exercise from ${winStr}`;
+
+  // Reset all checks
+  document.querySelectorAll('#checklist .checklist-item').forEach(c => c.classList.remove('checked'));
+  document.getElementById('btn-start').disabled = true;
+
+  goTo('screen-2');
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  updateStartBtn();
+}
+
+function toggleInfo(event, id) {
+  event.stopPropagation();
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function updateStartBtn() {
+  const checks = document.querySelectorAll('#checklist .checklist-item');
+  const allChecked = Array.from(checks).every(c => c.classList.contains('checked'));
+  document.getElementById('btn-start').disabled = !allChecked;
+}
+
+// =========================================================
+// SCREEN 3 — TEST IN PROGRESS
+// =========================================================
+function startTest() {
+  state.startTime = Date.now();
+  state.readings = [];
+  state.invalidated = false;
+  state.invalidReason = '';
+  state.lastReadingTime = null;
+  state.nextReadingTarget = null;
+  state.firstReadingTime = null;
+
+  let windowLabel = 'Basal Test';
+  if (state.prepDate && state.prepEndTime) {
+    const s = state.prepDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const e = state.prepEndTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    windowLabel = s + ' — ' + e;
+  }
+  document.getElementById('test-window-label').textContent = windowLabel;
+  document.getElementById('current-glucose-display').textContent = '—';
+  document.getElementById('glucose-unit-label').textContent = unitLabel();
+  document.getElementById('reading-list').innerHTML = '';
+  document.getElementById('stat-readings').textContent = '0';
+  document.getElementById('stat-up').textContent = '—';
+  document.getElementById('stat-down').textContent = '—';
+  document.getElementById('stat-next').textContent = '—';
+  document.getElementById('inline-warning').classList.remove('visible');
+  document.getElementById('timing-warning').style.display = 'none';
+
+  const startStr = new Date(state.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('stat-start-time').textContent = startStr;
+
+  prefillTimeEntry();
+  resetChart('glucose-chart');
+  goTo('screen-3');
+  state.timerInterval = setInterval(updateElapsed, 1000);
+}
+
+function prefillTimeEntry(dt) {
+  const d = dt || new Date();
+  const yyyy = d.getFullYear();
+  const mo = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('reading-time-entry').value = `${yyyy}-${mo}-${dd}T${hh}:${mm}`;
+}
+
+function updateElapsed() {
+  // Elapsed counts from the entered time of the first reading
+  if (state.firstReadingTime) {
+    const ms = Date.now() - state.firstReadingTime;
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    document.getElementById('stat-elapsed').textContent = m + ':' + String(s).padStart(2,'0');
+  }
+
+  // Next reading counts down from wall-clock target set when Log was pressed
+  if (state.nextReadingTarget) {
+    const remaining = state.nextReadingTarget - Date.now();
+    const el = document.getElementById('stat-next');
+    if (remaining <= 0) {
+      el.textContent = 'Now';
+    } else {
+      const rh = Math.floor(remaining / 3600000);
+      const rm = Math.floor((remaining % 3600000) / 60000);
+      el.textContent = rh + ':' + String(rm).padStart(2,'0');
+    }
+  }
+}
+
+function logReading() {
+  const glucoseInput = document.getElementById('glucose-entry');
+  const timeInput = document.getElementById('reading-time-entry');
+  const timingWarn = document.getElementById('timing-warning');
+  const val = parseInt(glucoseInput.value);
+
+  if (isNaN(val) || val < 30 || val > 600) {
+    glucoseInput.style.borderColor = 'var(--pink)';
+    setTimeout(() => glucoseInput.style.borderColor = 'var(--border)', 1200);
+    return;
+  }
+
+  // Parse entered datetime-local value
+  let entryTime = Date.now();
+  if (timeInput.value) {
+    entryTime = new Date(timeInput.value).getTime();
+  }
+
+  // Timing check
+  timingWarn.style.display = 'none';
+  if (state.readings.length > 0) {
+    let minDiff = Infinity;
+    for (const r of state.readings) {
+      const diff = Math.abs(r.time - entryTime);
+      if (diff < minDiff) minDiff = diff;
+    }
+    const diffMin = minDiff / 60000;
+    if (diffMin < 110) {
+      timingWarn.textContent = `⚠️ This reading is ${Math.round(diffMin)} min from the previous one — less than the 1:50 minimum. Logged anyway.`;
+      timingWarn.style.display = 'block';
+    } else if (diffMin > 130) {
+      timingWarn.textContent = `⚠️ This reading is ${Math.round(diffMin)} min from the previous one — more than the 2:10 target. Logged anyway.`;
+      timingWarn.style.display = 'block';
+    }
+  }
+
+  glucoseInput.value = '';
+  glucoseInput.style.borderColor = 'var(--border)';
+
+  state.readings.push({ time: entryTime, value: val });
+  state.readings.sort((a, b) => a.time - b.time);
+  state.lastReadingTime = Math.max(...state.readings.map(r => r.time));
+  state.nextReadingTarget = Date.now() + 120 * 60000;  // wall-clock target 2hrs from now
+  if (!state.firstReadingTime) {
+    state.firstReadingTime = entryTime;
+  }
+
+  // Advance time field by 2 hours from last reading
+  prefillTimeEntry(new Date(state.lastReadingTime + 120 * 60000));
+
+  const firstVal = state.readings[0].value;
+  const allVals = state.readings.map(r => r.value);
+  const maxVal = Math.max(...allVals);
+  const minVal = Math.min(...allVals);
+
+  // Display current glucose in selected unit
+  document.getElementById('current-glucose-display').textContent = fmtGlucose(val);
+  document.getElementById('stat-readings').textContent = state.readings.length;
+
+  // Up/down vs first reading
+  const upFromFirst = Math.max(0, maxVal - firstVal);
+  const downFromFirst = Math.max(0, firstVal - minVal);
+  document.getElementById('stat-up').textContent = upFromFirst > 0 ? '+' + fmtGlucose(upFromFirst) : '—';
+  document.getElementById('stat-down').textContent = downFromFirst > 0 ? '-' + fmtGlucose(downFromFirst) : '—';
+
+  // Starting glucose next to start time after first reading
+  if (state.readings.length === 1) {
+    const startTimeStr = new Date(state.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('stat-start-time').innerHTML =
+      startTimeStr +
+      '<br><span style="font-family:\'Playfair Display\',serif;font-size:1.4rem;font-weight:700;color:var(--pink);">' +
+      fmtGlucose(firstVal) +
+      ' <span style="font-size:0.7rem;font-weight:500;color:var(--muted);">' + unitLabel() + '</span></span>';
+  }
+
+  // Boundary checks — soft stops
+  if (val < 70) {
+    showSoftstop(
+      '🔴',
+      'Glucose Below 70 ' + unitLabel(),
+      `Your glucose is ${fmtGlucose(val)} ${unitLabel()} — below the safe threshold for this test. You should treat this low before doing anything else. Do you want to save your data before ending?`
+    );
+  } else if (val > 180) {
+    showSoftstop(
+      '🟡',
+      'Glucose Above 180 ' + unitLabel(),
+      `Your glucose is ${fmtGlucose(val)} ${unitLabel()}. Consider ending the test and correcting. Your data up to this point can still be saved.`
+    );
+  }
+
+  // ±30 from first reading warning (inline, does not stop test)
+  const warning = document.getElementById('inline-warning');
+  if (state.readings.length > 1) {
+    const upFromFirst = Math.max(0, ...allVals.slice(1).map(v => v - firstVal));
+    const downFromFirst = Math.max(0, ...allVals.slice(1).map(v => firstVal - v));
+    if (upFromFirst > 30 && downFromFirst > 30) {
+      warning.textContent = `⚠️ Glucose has moved more than ${fmtGlucose(30)} ${unitLabel()} both above and below your starting value of ${fmtGlucose(firstVal)} ${unitLabel()}.`;
+      warning.classList.add('visible');
+    } else if (upFromFirst > 30) {
+      warning.textContent = `⚠️ Glucose has risen ${fmtGlucose(upFromFirst)} ${unitLabel()} above your starting value of ${fmtGlucose(firstVal)} ${unitLabel()}. A basal adjustment may be needed.`;
+      warning.classList.add('visible');
+    } else if (downFromFirst > 30) {
+      warning.textContent = `⚠️ Glucose has dropped ${fmtGlucose(downFromFirst)} ${unitLabel()} below your starting value of ${fmtGlucose(firstVal)} ${unitLabel()}. A basal adjustment may be needed.`;
+      warning.classList.add('visible');
+    } else if (val <= 85 || val >= 165) {
+      warning.textContent = '⚠️ Glucose is approaching the boundary. Monitor closely.';
+      warning.classList.add('visible');
+    } else {
+      warning.classList.remove('visible');
+    }
+  }
+
+  renderReadingList();
+  drawChart('glucose-chart', state.readings);
+}
+
+function showSoftstop(icon, title, body) {
+  document.getElementById('softstop-icon').textContent = icon;
+  document.getElementById('softstop-title').textContent = title;
+  document.getElementById('softstop-body').textContent = body;
+  document.getElementById('softstop-modal').classList.add('open');
+}
+
+function softstopSave() {
+  document.getElementById('softstop-modal').classList.remove('open');
+  clearInterval(state.timerInterval);
+  if (state.readings.length >= 2) {
+    const entry = buildHistoryEntry(true);
+    state.history.unshift(entry);
+    saveHistory();
+    goTo('screen-history');
+  } else {
+    goTo('screen-1');
+  }
+}
+
+function softstopContinue() {
+  document.getElementById('softstop-modal').classList.remove('open');
+}
+
+function invalidateTest(reason) {
+  clearInterval(state.timerInterval);
+  state.invalidated = true;
+  state.invalidReason = reason;
+  document.getElementById('invalidate-text').textContent = reason;
+  goTo('screen-4');
+}
+
+function renderReadingList() {
+  const el = document.getElementById('reading-list');
+  if (state.readings.length === 0) { el.innerHTML = ''; return; }
+  const firstVal = state.readings[0].value;
+  let html = '';
+  [...state.readings].reverse().forEach(r => {
+    const t = new Date(r.time);
+    const tStr = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const deviationFromFirst = Math.abs(r.value - firstVal);
+    const outOfRange = r.value < 70 || r.value > 180 || deviationFromFirst > 30;
+    const colorStyle = outOfRange ? 'color:var(--pink);' : 'color:var(--green);';
+    html += `<div class="reading-row">
+      <span class="reading-time">${tStr}</span>
+      <span class="reading-val" style="${colorStyle}">${fmtGlucose(r.value)} ${unitLabel()}</span>
+    </div>`;
+  });
+  el.innerHTML = '<div class="card" style="padding:12px 16px;">' + html + '</div>';
+}
+
+function endTest() {
+  if (state.readings.length < 2) {
+    alert('Log at least 2 glucose readings before ending the test.');
+    return;
+  }
+  clearInterval(state.timerInterval);
+  computeResult();
+}
+
+function confirmEndEarly() {
+  if (confirm('End the test early? You can save the partial data.')) {
+    clearInterval(state.timerInterval);
+    if (state.readings.length < 2) {
+      discardAndRestart();
+      return;
+    }
+    computeResult(true);
+  }
+}
+
+// =========================================================
+// SCREEN 4 — INVALIDATED
+// =========================================================
+function savePartialAndHistory() {
+  const entry = buildHistoryEntry(true);
+  state.history.unshift(entry);
+  saveHistory();
+  goTo('screen-history');
+}
+
+function discardAndRestart() {
+  state.readings = [];
+  state.startTime = null;
+  state.lastReadingTime = null;
+  state.nextReadingTarget = null;
+  state.firstReadingTime = null;
+  goTo('screen-0');
+}
+
+// =========================================================
+// SCREEN 5 — RESULTS
+// =========================================================
+function computeResult(partial = false) {
+  const sorted = [...state.readings].sort((a, b) => a.time - b.time);
+  const vals = sorted.map(r => r.value);
+  const first = vals[0];
+  const last = vals[vals.length - 1];
+
+  // Deviation from first reading for every subsequent reading
+  const peakAbove = Math.max(0, ...vals.slice(1).map(v => v - first));  // worst rise from first
+  const peakBelow = Math.max(0, ...vals.slice(1).map(v => first - v));  // worst drop from first
+
+  const roseTooMuch = peakAbove > 30;
+  const droppedTooMuch = peakBelow > 30;
+
+  const win = WINDOWS[state.selectedWindow] || WINDOWS.custom;
+  const winLabel = (state.prepDate && state.prepEndTime)
+    ? state.prepDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' — ' +
+      state.prepEndTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    : win.label;
+  document.getElementById('result-window-label').textContent = winLabel;
+
+  let icon, title, subtitle, body, cardClass;
+
+  if (!roseTooMuch && !droppedTooMuch) {
+    icon = '🟢'; title = ''; cardClass = 'result-good';
+    subtitle = 'Glucose stayed within range throughout this window.';
+    body = `No reading moved more than ${fmtGlucose(30)} ${unitLabel()} from your starting value of ${fmtGlucose(first)} ${unitLabel()}. The highest deviation was ${fmtGlucose(Math.max(peakAbove, peakBelow))} ${unitLabel()}. This suggests your basal rate is doing its job during this window.`;
+
+  } else if (roseTooMuch && !droppedTooMuch) {
+    icon = '🟡'; title = ''; cardClass = 'result-low';
+    subtitle = 'Glucose rose more than 30 ' + unitLabel() + ' above your starting value.';
+    body = `Your glucose reached ${fmtGlucose(first + peakAbove)} ${unitLabel()} — ${fmtGlucose(peakAbove)} ${unitLabel()} above your starting value of ${fmtGlucose(first)} ${unitLabel()}. A rise of more than ${fmtGlucose(30)} ${unitLabel()} from your starting value without food, exercise, or a correction suggests your basal rate may not be covering this window fully. This is worth discussing with your care team.`;
+
+  } else if (droppedTooMuch && !roseTooMuch) {
+    icon = '🔴'; title = ''; cardClass = 'result-high';
+    subtitle = 'Glucose dropped more than 30 ' + unitLabel() + ' below your starting value.';
+    body = `Your glucose reached ${fmtGlucose(first - peakBelow)} ${unitLabel()} — ${fmtGlucose(peakBelow)} ${unitLabel()} below your starting value of ${fmtGlucose(first)} ${unitLabel()}. A drop of more than ${fmtGlucose(30)} ${unitLabel()} from your starting value without food or exercise as a cause suggests your basal rate may be more than your body needs during this window. This is worth reviewing with your care team.`;
+
+  } else {
+    // Both thresholds breached
+    icon = '🟠'; title = ''; cardClass = 'result-low';
+    subtitle = 'Glucose moved significantly in both directions during this window.';
+    body = `Your glucose rose ${fmtGlucose(peakAbove)} ${unitLabel()} and fell ${fmtGlucose(peakBelow)} ${unitLabel()} from your starting value of ${fmtGlucose(first)} ${unitLabel()}. Movement in both directions beyond ${fmtGlucose(30)} ${unitLabel()} makes it difficult to draw a clear conclusion about your basal rate alone. Other factors — meal timing, stress, activity, or insulin timing — may also be contributing. This pattern is worth reviewing with your care team.`;
+  }
+
+  if (partial) {
+    body = '(Partial test) ' + body;
+    icon = '⚪';
+  }
+
+  if (document.getElementById('result-icon')) document.getElementById('result-icon').textContent = icon;
+  if (document.getElementById('result-title')) document.getElementById('result-title').textContent = title;
+  document.getElementById('result-subtitle').textContent = subtitle;
+  document.getElementById('result-body').textContent = body;
+  document.getElementById('result-card').className = 'result-card ' + cardClass;
+
+  document.getElementById('res-readings').textContent = sorted.length;
+  document.getElementById('res-start').textContent = fmtGlucose(first) + ' ' + unitLabel();
+  document.getElementById('res-end').textContent = fmtGlucose(last) + ' ' + unitLabel();
+  const netChange = last - first;
+  const sign = netChange >= 0 ? '+' : '';
+  document.getElementById('res-change').textContent = sign + fmtGlucose(netChange) + ' ' + unitLabel();
+
+  drawChart('result-chart', sorted);
+
+  // All readings list
+  const firstVal = sorted[0].value;
+  let readingHtml = '';
+  sorted.forEach(r => {
+    const tStr = new Date(r.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const dev = Math.abs(r.value - firstVal);
+    const color = dev > 30 || r.value < 70 || r.value > 180 ? 'var(--pink)' : 'var(--green)';
+    readingHtml += `<div class="reading-row">
+      <span class="reading-time">${tStr}</span>
+      <span class="reading-val" style="color:${color};font-weight:600;">${fmtGlucose(r.value)} ${unitLabel()}</span>
+    </div>`;
+  });
+  document.getElementById('res-reading-list').innerHTML = readingHtml;
+
+  goTo('screen-5');
+
+  state.pendingResult = { icon, title, cardClass, change: netChange, partial };
+}
+
+function saveToHistory() {
+  const entry = buildHistoryEntry(false);
+  state.history.unshift(entry);
+  saveHistory();
+  const btn = document.getElementById('btn-save-history');
+  if (btn) { btn.textContent = 'Saved ✓'; btn.disabled = true; }
+  const viewBtn = document.getElementById('btn-view-history');
+  if (viewBtn) viewBtn.style.display = '';
+}
+
+function buildHistoryEntry(partial) {
+  const sorted = [...state.readings].sort((a, b) => a.time - b.time);
+  const vals = sorted.map(r => r.value);
+  const first = vals[0];
+  const last = vals[vals.length - 1];
+  const peakAbove = Math.max(0, ...vals.slice(1).map(v => v - first));
+  const peakBelow = Math.max(0, ...vals.slice(1).map(v => first - v));
+  const roseTooMuch = peakAbove > 30;
+  const droppedTooMuch = peakBelow > 30;
+  let result, dotClass;
+  if (state.invalidated) {
+    result = 'Invalidated'; dotClass = 'dot-red';
+  } else if (!roseTooMuch && !droppedTooMuch) {
+    result = 'Basal looks good'; dotClass = 'dot-green';
+  } else if (roseTooMuch && droppedTooMuch) {
+    result = 'Basal needs review'; dotClass = 'dot-yellow';
+  } else if (roseTooMuch) {
+    result = 'Basal may be too low'; dotClass = 'dot-yellow';
+  } else {
+    result = 'Basal may be too high'; dotClass = 'dot-red';
+  }
+  if (partial && !state.invalidated) result = '(Partial) ' + result;
+  return {
+    id: Date.now(),
+    window: state.selectedWindow,
+    date: new Date().toISOString(),
+    result, dotClass,
+    change: last - first,
+    readings: sorted,
+    invalidated: state.invalidated,
+    invalidReason: state.invalidReason
+  };
+}
+
+function runAnother() {
+  state.readings = [];
+  state.startTime = null;
+  state.selectedWindow = null;
+  state.lastReadingTime = null;
+  state.nextReadingTarget = null;
+  state.firstReadingTime = null;
+  state.prepDate = null;
+  state.prepEndTime = null;
+  document.getElementById('timing-warning').style.display = 'none';
+  document.querySelectorAll('.card-selectable').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btn-window-next').disabled = true;
+  document.querySelectorAll('#checklist .checklist-item').forEach(c => c.classList.remove('checked'));
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('prep-window').value = '';
+  document.getElementById('prep-result').style.display = 'none';
+  document.getElementById('btn-prep-next').disabled = true;
+  goTo('screen-0');
+}
+
+// =========================================================
+// HISTORY
+// =========================================================
+function saveHistory() {
+  localStorage.setItem('basal-history', JSON.stringify(state.history));
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (state.history.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>No tests saved yet. Complete your first basal test to see your history here.</p>
+    </div>`;
+    return;
+  }
+  let html = '';
+  state.history.forEach((entry, i) => {
+    const d = new Date(entry.date);
+    const dateStr = d.toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'});
+    const timeStr = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const win = WINDOWS[entry.window] || { emoji: '🕐', label: entry.window };
+    html += `<div class="history-item" onclick="showHistoryDetail(${i})">
+      <div class="history-dot ${entry.dotClass}"></div>
+      <div class="history-info">
+        <div class="history-window">${win.emoji} ${win.label}</div>
+        <div class="history-date">${dateStr} at ${timeStr}</div>
+        <div class="history-result" style="color:${entry.dotClass === 'dot-green' ? 'var(--green)' : entry.dotClass === 'dot-yellow' ? 'var(--yellow)' : 'var(--pink)'}">${entry.result}</div>
+      </div>
+      <span style="color:var(--muted);font-size:1.1rem;">›</span>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function showHistoryDetail(i) {
+  const entry = state.history[i];
+  const d = new Date(entry.date);
+  const dateStr = d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const win = WINDOWS[entry.window] || { emoji: '🕐', label: entry.window || 'Test', time: '' };
+  const vals = entry.readings.map(r => r.value);
+  const first = vals[0] || '—';
+  const last = vals[vals.length - 1] || '—';
+  const sign = entry.change >= 0 ? '+' : '';
+
+  let html = `
+    <h2 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:4px;">${win.emoji} ${win.label}</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:18px;">${dateStr}</p>
+    <div style="display:flex;justify-content:space-between;font-size:0.87rem;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--muted);">Result</span><span style="font-weight:600;">${entry.result}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.87rem;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--muted);">Starting glucose</span><span style="font-weight:600;">${fmtGlucose(first)} ${unitLabel()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.87rem;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--muted);">Ending glucose</span><span style="font-weight:600;">${fmtGlucose(last)} ${unitLabel()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.87rem;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--muted);">Net change</span><span style="font-weight:600;">${sign}${fmtGlucose(entry.change)} ${unitLabel()}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.87rem;padding:8px 0;margin-bottom:16px;">
+      <span style="color:var(--muted);">Readings</span><span style="font-weight:600;">${entry.readings.length}</span>
+    </div>`;
+
+  if (entry.readings.length > 0) {
+    html += `<div class="chart-wrap"><div class="chart-title">Glucose Trace</div><canvas id="modal-chart" height="120"></canvas></div>`;
+  }
+
+  if (entry.invalidated && entry.invalidReason) {
+    html += `<div class="invalidate-reason"><h3>Why it was invalidated</h3><p>${entry.invalidReason}</p></div>`;
+  }
+
+  html += `<button class="btn btn-secondary" style="width:100%;margin-top:12px;" onclick="printHistoryEntry('${dateStr}')">🖨 Print This Test</button>`;
+
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('history-modal').classList.add('open');
+
+  if (entry.readings.length > 0) {
+    setTimeout(() => drawChart('modal-chart', entry.readings), 50);
+  }
+}
+
+function printHistoryEntry(dateStr) {
+  document.getElementById('print-test-date').textContent = 'Test Date: ' + dateStr;
+  const header = document.getElementById('print-header').cloneNode(true);
+  header.style.display = 'block';
+  header.id = 'modal-print-header';
+  const modalContent = document.getElementById('modal-content');
+  modalContent.prepend(header);
+  document.body.classList.add('printing-modal');
+  window.print();
+  document.body.classList.remove('printing-modal');
+  const inserted = document.getElementById('modal-print-header');
+  if (inserted) inserted.remove();
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('history-modal')) {
+    document.getElementById('history-modal').classList.remove('open');
+  }
+}
+
+// =========================================================
+// CHART
+// =========================================================
+function resetChart(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawChart(id, readings) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width || canvas.offsetWidth || 400;
+  const H = parseInt(canvas.getAttribute('height')) || 140;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 16, right: 16, bottom: 24, left: 36 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (readings.length < 1) return;
+
+  const vals = readings.map(r => r.value);
+  const times = readings.map(r => r.time);
+  const minV = Math.min(60, Math.min(...vals) - 10);
+  const maxV = Math.max(180, Math.max(...vals) + 10);
+  const minT = times[0];
+  const maxT = times[times.length - 1] || minT + 1;
+
+  function xp(t) { return pad.left + ((t - minT) / Math.max(maxT - minT, 1)) * cW; }
+  function yp(v) { return pad.top + (1 - (v - minV) / (maxV - minV)) * cH; }
+
+  // Reference lines at initial glucose ±30
+  const initialVal = vals[0];
+  [initialVal + 30, initialVal - 30].forEach(level => {
+    if (level >= minV && level <= maxV) {
+      const y = yp(level);
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = level > initialVal ? 'rgba(219,101,84,0.5)' : 'rgba(142,49,101,0.45)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + cW, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = level > initialVal ? 'rgba(219,101,84,0.8)' : 'rgba(142,49,101,0.7)';
+      ctx.font = '10px DM Sans, sans-serif';
+      ctx.fillText(level, 2, y + 3);
+    }
+  });
+
+  // Initial glucose dotted baseline
+  const iy = yp(initialVal);
+  ctx.beginPath();
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(52,40,88,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.moveTo(pad.left, iy);
+  ctx.lineTo(pad.left + cW, iy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(52,40,88,0.8)';
+  ctx.font = 'bold 10px DM Sans, sans-serif';
+  ctx.fillText(initialVal, 2, iy + 3);
+
+  if (readings.length < 2) {
+    // Single point
+    ctx.beginPath();
+    ctx.arc(xp(times[0]), yp(vals[0]), 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#8E3165';
+    ctx.fill();
+    return;
+  }
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
+  grad.addColorStop(0, 'rgba(142,49,101,0.18)');
+  grad.addColorStop(1, 'rgba(142,49,101,0)');
+  ctx.beginPath();
+  ctx.moveTo(xp(times[0]), yp(vals[0]));
+  readings.forEach(r => ctx.lineTo(xp(r.time), yp(r.value)));
+  ctx.lineTo(xp(times[times.length-1]), pad.top + cH);
+  ctx.lineTo(xp(times[0]), pad.top + cH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xp(times[0]), yp(vals[0]));
+  readings.forEach(r => ctx.lineTo(xp(r.time), yp(r.value)));
+  ctx.strokeStyle = '#8E3165';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Dots
+  readings.forEach(r => {
+    const outOfRange = r.value < 80 || r.value > 180;
+    ctx.beginPath();
+    ctx.arc(xp(r.time), yp(r.value), 4, 0, Math.PI * 2);
+    ctx.fillStyle = outOfRange ? '#DB6554' : '#8E3165';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+// =========================================================
+// INIT
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+  initPrep();
+});
+</script>
+
+<footer style="background:var(--deep-purple);padding:32px 80px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.08);">
+  <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#ffffff;letter-spacing:0.04em;">fiercely diabetic</div>
+  <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);">Chicago suburbs · Built with my daughter · © 2026</div>
+</footer>
+
+</body>
+</html>
