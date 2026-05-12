@@ -1,0 +1,216 @@
+import { getDb } from './schema';
+import type { TokenSet } from '../auth/dexcom';
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+export function createUser(): number {
+  const db = getDb();
+  const result = db.prepare('INSERT INTO users DEFAULT VALUES').run();
+  return Number(result.lastInsertRowid);
+}
+
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+
+export function saveTokens(userId: number, tokens: TokenSet): void {
+  const db = getDb();
+  const existing = db
+    .prepare('SELECT id FROM dexcom_tokens WHERE user_id = ?')
+    .get(userId);
+
+  if (existing) {
+    db.prepare(
+      `UPDATE dexcom_tokens
+       SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = datetime('now')
+       WHERE user_id = ?`
+    ).run(tokens.accessToken, tokens.refreshToken, tokens.expiresAt, userId);
+  } else {
+    db.prepare(
+      `INSERT INTO dexcom_tokens (user_id, access_token, refresh_token, expires_at)
+       VALUES (?, ?, ?, ?)`
+    ).run(userId, tokens.accessToken, tokens.refreshToken, tokens.expiresAt);
+  }
+}
+
+export function markUserNeedsReauth(userId: number): void {
+  const db = getDb();
+  db.prepare('UPDATE dexcom_tokens SET expires_at = 0 WHERE user_id = ?').run(userId);
+}
+
+// ─── Glucose readings ─────────────────────────────────────────────────────────
+
+export interface EgvRow {
+  systemTime: string;
+  displayTime: string;
+  value: number;
+  trend: string | null;
+  trendRate: number | null;
+  status: string | null;
+  rawJson: string;
+}
+
+export function upsertEgvs(userId: number, rows: EgvRow[]): number {
+  if (rows.length === 0) return 0;
+
+  const db = getDb();
+  const stmt = db.prepare(
+    `INSERT INTO glucose_readings
+       (user_id, system_time, display_time, value, trend, trend_rate, status, raw_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, system_time) DO UPDATE SET
+       display_time = excluded.display_time,
+       value        = excluded.value,
+       trend        = excluded.trend,
+       trend_rate   = excluded.trend_rate,
+       status       = excluded.status,
+       raw_json     = excluded.raw_json`
+  );
+
+  db.exec('BEGIN');
+  try {
+    for (const r of rows) {
+      stmt.run(
+        userId,
+        r.systemTime,
+        r.displayTime,
+        r.value,
+        r.trend ?? null,
+        r.trendRate ?? null,
+        r.status ?? null,
+        r.rawJson
+      );
+    }
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+
+  return rows.length;
+}
+
+export function getLastEgvTime(userId: number): string | null {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT system_time FROM glucose_readings
+       WHERE user_id = ? ORDER BY system_time DESC LIMIT 1`
+    )
+    .get(userId) as { system_time: string } | undefined;
+  return row?.system_time ?? null;
+}
+
+export function countEgvs(userId: number): number {
+  const db = getDb();
+  const row = db
+    .prepare('SELECT COUNT(*) as cnt FROM glucose_readings WHERE user_id = ?')
+    .get(userId) as { cnt: number };
+  return row.cnt;
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────────
+
+export interface EventRow {
+  eventId: string;
+  eventType: string;
+  eventSubtype: string | null;
+  value: number | null;
+  unit: string | null;
+  systemTime: string;
+  displayTime: string;
+  rawJson: string;
+}
+
+export function upsertEvents(userId: number, rows: EventRow[]): number {
+  if (rows.length === 0) return 0;
+
+  const db = getDb();
+  const stmt = db.prepare(
+    `INSERT INTO dexcom_events
+       (user_id, event_id, event_type, event_subtype, value, unit, system_time, display_time, raw_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, event_id) DO UPDATE SET
+       event_type    = excluded.event_type,
+       event_subtype = excluded.event_subtype,
+       value         = excluded.value,
+       unit          = excluded.unit,
+       system_time   = excluded.system_time,
+       display_time  = excluded.display_time,
+       raw_json      = excluded.raw_json`
+  );
+
+  db.exec('BEGIN');
+  try {
+    for (const r of rows) {
+      stmt.run(
+        userId,
+        r.eventId,
+        r.eventType,
+        r.eventSubtype ?? null,
+        r.value ?? null,
+        r.unit ?? null,
+        r.systemTime,
+        r.displayTime,
+        r.rawJson
+      );
+    }
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+
+  return rows.length;
+}
+
+export function countEvents(userId: number): number {
+  const db = getDb();
+  const row = db
+    .prepare('SELECT COUNT(*) as cnt FROM dexcom_events WHERE user_id = ?')
+    .get(userId) as { cnt: number };
+  return row.cnt;
+}
+
+// ─── Sync log ─────────────────────────────────────────────────────────────────
+
+export function startSyncLog(
+  userId: number,
+  syncType: 'full' | 'incremental'
+): number {
+  const db = getDb();
+  const result = db
+    .prepare(
+      `INSERT INTO sync_log (user_id, sync_type, started_at)
+       VALUES (?, ?, datetime('now'))`
+    )
+    .run(userId, syncType);
+  return Number(result.lastInsertRowid);
+}
+
+export function finishSyncLog(
+  syncId: number,
+  egvsCount: number,
+  eventsCount: number,
+  error?: string
+): void {
+  const db = getDb();
+  db.prepare(
+    `UPDATE sync_log
+     SET finished_at = datetime('now'), egvs_count = ?, events_count = ?, error = ?
+     WHERE id = ?`
+  ).run(egvsCount, eventsCount, error ?? null, syncId);
+}
+
+export function getLastSuccessfulSync(
+  userId: number
+): { finished_at: string; sync_type: string } | null {
+  const db = getDb();
+  return (
+    (db
+      .prepare(
+        `SELECT finished_at, sync_type FROM sync_log
+         WHERE user_id = ? AND error IS NULL AND finished_at IS NOT NULL
+         ORDER BY finished_at DESC LIMIT 1`
+      )
+      .get(userId) as { finished_at: string; sync_type: string } | undefined) ?? null
+  );
+}
