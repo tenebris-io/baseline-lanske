@@ -1,17 +1,18 @@
 import { dexcomGet } from './dexcomClient';
 
 export interface DexcomEvent {
+  recordId: string;
   eventType: 'carbs' | 'insulin' | 'exercise' | 'health';
   eventSubType: string | null;
-  value: number | null;
+  value: string | number | null;
   unit: string | null;
   displayTime: string;
   systemTime: string;
-  id: string;
+  eventStatus: string | null;
 }
 
 interface EventsResponse {
-  events: DexcomEvent[];
+  records: DexcomEvent[];
 }
 
 export async function fetchEvents(
@@ -23,5 +24,5 @@ export async function fetchEvents(
     startDate,
     endDate,
   });
-  return data.events ?? [];
+  return data.records ?? [];
 }

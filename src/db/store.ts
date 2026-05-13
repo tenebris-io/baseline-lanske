@@ -70,13 +70,13 @@ export function upsertEgvs(userId: number, rows: EgvRow[]): number {
     for (const r of rows) {
       stmt.run(
         userId,
-        r.systemTime,
-        r.displayTime,
-        r.value,
+        r.systemTime ?? null,
+        r.displayTime ?? null,
+        r.value ?? null,
         r.trend ?? null,
         r.trendRate ?? null,
         r.status ?? null,
-        r.rawJson
+        r.rawJson ?? null
       );
     }
     db.exec('COMMIT');
@@ -143,14 +143,14 @@ export function upsertEvents(userId: number, rows: EventRow[]): number {
     for (const r of rows) {
       stmt.run(
         userId,
-        r.eventId,
-        r.eventType,
+        r.eventId ?? null,
+        r.eventType ?? null,
         r.eventSubtype ?? null,
         r.value ?? null,
         r.unit ?? null,
-        r.systemTime,
-        r.displayTime,
-        r.rawJson
+        r.systemTime ?? null,
+        r.displayTime ?? null,
+        r.rawJson ?? null
       );
     }
     db.exec('COMMIT');

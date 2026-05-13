@@ -12,7 +12,7 @@ export interface EgvPoint {
 }
 
 interface EgvsResponse {
-  egvs: EgvPoint[];
+  records: EgvPoint[];
   unit: string;
   rateUnit: string;
 }
@@ -26,5 +26,5 @@ export async function fetchEgvs(
     startDate,
     endDate,
   });
-  return data.egvs ?? [];
+  return data.records ?? [];
 }

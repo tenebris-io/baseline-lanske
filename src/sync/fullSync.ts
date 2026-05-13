@@ -4,8 +4,8 @@ import { fetchEvents } from '../api/events';
 import { upsertEgvs, upsertEvents, startSyncLog, finishSyncLog } from '../db/store';
 import type { EgvRow, EventRow } from '../db/store';
 
-// Dexcom max window is 90 days; use 89 to stay safely under
-const CHUNK_DAYS = 89;
+// Sandbox API max window is 30 days; production is 90. Use 29 to stay safely under.
+const CHUNK_DAYS = 29;
 
 function addDays(isoDate: string, days: number): string {
   const d = new Date(isoDate);
@@ -56,31 +56,38 @@ export async function fullSync(userId: number): Promise<void> {
       const { startDate: s, endDate: e } = chunks[i];
       console.log(`[fullSync] chunk ${i + 1}/${chunks.length}: ${s} → ${e}`);
 
+      // Small delay between chunks to avoid hammering the sandbox rate limit
+      if (i > 0) await new Promise((resolve) => setTimeout(resolve, 300));
+
       const [egvs, events] = await Promise.all([
         fetchEgvs(userId, s, e),
         fetchEvents(userId, s, e),
       ]);
 
-      const egvRows: EgvRow[] = egvs.map((pt) => ({
-        systemTime: pt.systemTime,
-        displayTime: pt.displayTime,
-        value: pt.value,
-        trend: pt.trend ?? null,
-        trendRate: pt.trendRate ?? null,
-        status: pt.status ?? null,
-        rawJson: JSON.stringify(pt),
-      }));
+      const egvRows: EgvRow[] = egvs
+        .filter((pt) => pt.systemTime != null && pt.value != null)
+        .map((pt) => ({
+          systemTime: pt.systemTime,
+          displayTime: pt.displayTime ?? pt.systemTime,
+          value: pt.value,
+          trend: pt.trend ?? null,
+          trendRate: pt.trendRate ?? null,
+          status: pt.status ?? null,
+          rawJson: JSON.stringify(pt),
+        }));
 
-      const eventRows: EventRow[] = events.map((ev) => ({
-        eventId: ev.id,
-        eventType: ev.eventType,
-        eventSubtype: ev.eventSubType ?? null,
-        value: ev.value ?? null,
-        unit: ev.unit ?? null,
-        systemTime: ev.systemTime,
-        displayTime: ev.displayTime,
-        rawJson: JSON.stringify(ev),
-      }));
+      const eventRows: EventRow[] = events
+        .filter((ev) => ev.systemTime != null && ev.recordId != null)
+        .map((ev) => ({
+          eventId: ev.recordId,
+          eventType: ev.eventType ?? 'unknown',
+          eventSubtype: ev.eventSubType ?? null,
+          value: ev.value != null ? parseFloat(String(ev.value)) : null,
+          unit: ev.unit ?? null,
+          systemTime: ev.systemTime,
+          displayTime: ev.displayTime ?? ev.systemTime,
+          rawJson: JSON.stringify(ev),
+        }));
 
       totalEgvs += upsertEgvs(userId, egvRows);
       totalEvents += upsertEvents(userId, eventRows);

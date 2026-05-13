@@ -49,16 +49,18 @@ export async function incrementalSync(userId: number): Promise<void> {
       rawJson: JSON.stringify(pt),
     }));
 
-    const eventRows: EventRow[] = events.map((ev) => ({
-      eventId: ev.id,
-      eventType: ev.eventType,
-      eventSubtype: ev.eventSubType ?? null,
-      value: ev.value ?? null,
-      unit: ev.unit ?? null,
-      systemTime: ev.systemTime,
-      displayTime: ev.displayTime,
-      rawJson: JSON.stringify(ev),
-    }));
+    const eventRows: EventRow[] = events
+      .filter((ev) => ev.systemTime != null && ev.recordId != null)
+      .map((ev) => ({
+        eventId: ev.recordId,
+        eventType: ev.eventType ?? 'unknown',
+        eventSubtype: ev.eventSubType ?? null,
+        value: ev.value != null ? parseFloat(String(ev.value)) : null,
+        unit: ev.unit ?? null,
+        systemTime: ev.systemTime,
+        displayTime: ev.displayTime ?? ev.systemTime,
+        rawJson: JSON.stringify(ev),
+      }));
 
     totalEgvs += upsertEgvs(userId, egvRows);
     totalEvents += upsertEvents(userId, eventRows);

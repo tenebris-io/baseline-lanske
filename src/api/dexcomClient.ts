@@ -28,6 +28,7 @@ export async function dexcomGet<T>(
     const config: AxiosRequestConfig = {
       headers: { Authorization: `Bearer ${accessToken}` },
       params,
+      timeout: 30000, // 30s — prevents silent hangs
     };
 
     try {
