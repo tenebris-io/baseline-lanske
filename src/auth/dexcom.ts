@@ -17,12 +17,13 @@ export interface TokenSet {
   expiresAt: number;
 }
 
-export function buildAuthUrl(): string {
+export function buildAuthUrl(state?: string): string {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
     scope: 'offline_access',
+    ...(state ? { state } : {}),
   });
   return `${AUTH_ENDPOINT}?${params.toString()}`;
 }

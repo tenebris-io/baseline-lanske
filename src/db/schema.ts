@@ -68,5 +68,22 @@ function initSchema(db: DatabaseSync): void {
       events_count INTEGER DEFAULT 0,
       error        TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER NOT NULL REFERENCES users(id),
+      token      TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_used  TEXT NOT NULL DEFAULT (datetime('now')),
+      expires_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS pending_auth (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      state_token TEXT NOT NULL UNIQUE,
+      source      TEXT NOT NULL DEFAULT 'web',
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      used        INTEGER NOT NULL DEFAULT 0
+    );
   `);
 }

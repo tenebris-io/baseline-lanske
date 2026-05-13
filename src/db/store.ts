@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { getDb } from './schema';
 import type { TokenSet } from '../auth/dexcom';
 
@@ -199,6 +200,57 @@ export function finishSyncLog(
      WHERE id = ?`
   ).run(egvsCount, eventsCount, error ?? null, syncId);
 }
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+
+export function createSession(userId: number): string {
+  const db = getDb();
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+  db.prepare(
+    `INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)`
+  ).run(userId, token, expiresAt);
+  return token;
+}
+
+export function validateSession(token: string): number | null {
+  const db = getDb();
+  const row = db
+    .prepare(`SELECT user_id, expires_at FROM sessions WHERE token = ?`)
+    .get(token) as { user_id: number; expires_at: string } | undefined;
+
+  if (!row) return null;
+  if (new Date(row.expires_at) < new Date()) return null;
+
+  db.prepare(`UPDATE sessions SET last_used = datetime('now') WHERE token = ?`).run(token);
+  return Number(row.user_id);
+}
+
+export function deleteSession(token: string): void {
+  getDb().prepare('DELETE FROM sessions WHERE token = ?').run(token);
+}
+
+// ─── Pending auth ─────────────────────────────────────────────────────────────
+
+export function createPendingAuth(source: 'mobile' | 'web'): string {
+  const db = getDb();
+  const stateToken = crypto.randomBytes(16).toString('hex');
+  db.prepare(`INSERT INTO pending_auth (state_token, source) VALUES (?, ?)`).run(stateToken, source);
+  return stateToken;
+}
+
+export function lookupPendingAuth(stateToken: string): { source: string } | null {
+  const row = getDb()
+    .prepare(`SELECT source FROM pending_auth WHERE state_token = ? AND used = 0`)
+    .get(stateToken) as { source: string } | undefined;
+  return row ?? null;
+}
+
+export function markPendingAuthUsed(stateToken: string): void {
+  getDb().prepare(`UPDATE pending_auth SET used = 1 WHERE state_token = ?`).run(stateToken);
+}
+
+// ─── Sync log ─────────────────────────────────────────────────────────────────
 
 export function getLastSuccessfulSync(
   userId: number
