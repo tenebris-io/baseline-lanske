@@ -4,6 +4,7 @@
     "slug": "fiercelydiabetic",
     "version": "1.0.0",
     "scheme": "fiercelydiabetic",
+    "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "plugins": [
