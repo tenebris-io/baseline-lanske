@@ -11,8 +11,8 @@ getDb();
 
 const app = createApp();
 
-app.listen(PORT, () => {
-  console.log(`Fiercely Diabetic — Dexcom pipeline running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Fiercely Diabetic — Dexcom pipeline running on http://0.0.0.0:${PORT} (all interfaces)`);
   console.log(`  → Authorize: http://localhost:${PORT}/auth/dexcom`);
   console.log(`  → Status:   http://localhost:${PORT}/status`);
 });
