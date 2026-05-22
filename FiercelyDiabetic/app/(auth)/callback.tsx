@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { setSession } from '@/store/session';
+import { useAuthStore } from '@/store/authStore';
 
 // Handles the deep link fiercelydiabetic://auth/callback?session=X
 // when the app is reopened from a background/closed state.
 export default function Callback() {
   const { session, error } = useLocalSearchParams<{ session?: string; error?: string }>();
+  const signIn = useAuthStore((s) => s.signIn);
 
   useEffect(() => {
     if (error) {
@@ -14,9 +15,9 @@ export default function Callback() {
       return;
     }
     if (session) {
-      setSession(session).then(() => router.replace('/(tabs)'));
+      signIn(session).then(() => router.replace('/(tabs)'));
     }
-  }, [session, error]);
+  }, [session, error, signIn]);
 
   return (
     <View style={styles.container}>

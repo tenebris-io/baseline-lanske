@@ -12,13 +12,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { getAuthStatus, logout, triggerSync } from '@/api/dexcom';
-import { clearSession } from '@/store/session';
+import { useAuthStore } from '@/store/authStore';
 import { useGlucoseStore } from '@/store/glucoseStore';
 
 export default function Settings() {
   const [status, setStatus] = useState<{ connected: boolean; lastSync: string | null } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const clear = useGlucoseStore((s) => s.clear);
+  const signOut = useAuthStore((s) => s.signOut);
 
   useEffect(() => {
     getAuthStatus().then(setStatus).catch(() => setStatus(null));
@@ -44,7 +45,7 @@ export default function Settings() {
         style: 'destructive',
         onPress: async () => {
           try { await logout(); } catch {}
-          await clearSession();
+          await signOut();
           clear();
           router.replace('/(auth)/login');
         },

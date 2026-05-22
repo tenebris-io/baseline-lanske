@@ -1,38 +1,30 @@
 import { Slot, router, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { getSession } from '@/store/session';
-import apiClient from '@/api/client';
+import { useAuthStore } from '@/store/authStore';
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
-  const [authed, setAuthed] = useState(false);
+  // Auth state now lives in a shared store, so login/logout update it live and
+  // this gate reacts immediately (instead of relying on a one-time startup snapshot).
+  const authed = useAuthStore((s) => s.authed);
+  const ready = useAuthStore((s) => s.ready);
+  const bootstrap = useAuthStore((s) => s.bootstrap);
   const segments = useSegments();
 
+  // One-time startup auth check.
   useEffect(() => {
-    checkAuth();
-  }, []);
+    bootstrap();
+  }, [bootstrap]);
 
+  // Keep the user on the correct side of the auth gate.
   useEffect(() => {
     if (!ready) return;
     const inAuth = segments[0] === '(auth)';
     if (!authed && !inAuth) router.replace('/(auth)/login');
     else if (authed && inAuth) router.replace('/(tabs)');
   }, [authed, segments, ready]);
-
-  async function checkAuth() {
-    const token = await getSession();
-    if (!token) { setAuthed(false); setReady(true); return; }
-    try {
-      const { data } = await apiClient.get('/api/auth/validate');
-      setAuthed(data.valid === true);
-    } catch {
-      setAuthed(false);
-    }
-    setReady(true);
-  }
 
   if (!ready) {
     return (

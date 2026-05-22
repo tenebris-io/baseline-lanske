@@ -64,28 +64,29 @@ export function GlucoseChart({
         )}
 
         {showAxes && (
-          <>
-            <VictoryAxis
-              dependentAxis
-              tickValues={[70, 120, 180, 250]}
-              style={{
-                axis: { stroke: '#e5e7eb' },
-                tickLabels: { fontSize: 10, fill: '#9ca3af' },
-                grid: { stroke: '#f3f4f6', strokeDasharray: '4,4' },
-              }}
-            />
-            <VictoryAxis
-              style={{
-                axis: { stroke: '#e5e7eb' },
-                tickLabels: { fontSize: 9, fill: '#9ca3af', angle: -30 },
-                grid: { stroke: 'transparent' },
-              }}
-              tickFormat={(t: Date) =>
-                t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-              }
-              tickCount={4}
-            />
-          </>
+          <VictoryAxis
+            dependentAxis
+            tickValues={[70, 120, 180, 250]}
+            style={{
+              axis: { stroke: '#e5e7eb' },
+              tickLabels: { fontSize: 10, fill: '#9ca3af' },
+              grid: { stroke: '#f3f4f6', strokeDasharray: '4,4' },
+            }}
+          />
+        )}
+
+        {showAxes && (
+          <VictoryAxis
+            style={{
+              axis: { stroke: '#e5e7eb' },
+              tickLabels: { fontSize: 9, fill: '#9ca3af', angle: -30 },
+              grid: { stroke: 'transparent' },
+            }}
+            tickFormat={(t: Date | number | string) =>
+              new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+            }
+            tickCount={4}
+          />
         )}
 
         <VictoryLine

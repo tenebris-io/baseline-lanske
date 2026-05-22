@@ -9,13 +9,14 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
-import { setSession } from '@/store/session';
+import { useAuthStore } from '@/store/authStore';
 import { initiateAuth } from '@/api/dexcom';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
+  const signIn = useAuthStore((s) => s.signIn);
 
   async function handleConnect() {
     setLoading(true);
@@ -38,7 +39,7 @@ export default function Login() {
         }
 
         if (session) {
-          await setSession(session);
+          await signIn(session);
           router.replace('/(tabs)');
         }
       }
